@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use Laminas\Diactoros\Response;
-use Laminas\Diactoros\ServerRequest;
 use Lcobucci\JWT\Parser as JwtParser;
 use League\OAuth2\Server\AuthorizationServer;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7\ServerRequest;
+use Psr\Http\Message\ServerRequestInterface;
 use Laravel\Passport\{Passport,ClientRepository,TokenRepository,PersonalAccessTokenResult,Client};
 class PersonalAccessTokenFactory
 {
@@ -73,7 +74,6 @@ class PersonalAccessTokenFactory
      * @param  array  $scopes
      * @return \Laravel\Passport\PersonalAccessTokenResult
      */
-    
     public function make($userId, $name, array $scopes = [])
     {
         //customize to support multiple guards//
@@ -82,12 +82,11 @@ class PersonalAccessTokenFactory
 
         //customize to support multiple guards//
 
-        $response =$this->dispatchRequestToAuthorizationServer(
+        $response = $this->dispatchRequestToAuthorizationServer(
             $this->createRequest($clientModel , $userId, $scopes)
         );
 
-
-        $token = tap($this->findAccessToken($response), function ($token) use ($userId, $name,$response) {
+        $token = tap($this->findAccessToken($response), function ($token) use ($userId, $name) {
             $this->tokens->save($token->forceFill([
                 'user_id' => $userId,
                 'name' => $name,
@@ -105,13 +104,13 @@ class PersonalAccessTokenFactory
      * @param  \Laravel\Passport\Client  $client
      * @param  mixed  $userId
      * @param  array  $scopes
-     * @return \Laminas\Diactoros\ServerRequest
+     * @return \Psr\Http\Message\ServerRequestInterface
      */
     protected function createRequest($client, $userId, array $scopes)
     {
-        $secret = Passport::$hashesClientSecrets ? Passport::$personalAccessClientSecret : $client->secret;
+        $secret = Passport::$hashesClientSecrets ? $this->clients->getPersonalAccessClientSecret() : $client->secret;
 
-        return (new ServerRequest)->withParsedBody( $client->personal_access_client==1 ? [
+        return (new ServerRequest('POST', 'not-important'))->withParsedBody( $client->personal_access_client==1 ? [
             'grant_type' => 'personal_access',
             'client_id' => $client->id,
             'client_secret' => $secret,
@@ -130,10 +129,10 @@ class PersonalAccessTokenFactory
     /**
      * Dispatch the given request to the authorization server.
      *
-     * @param  \Laminas\Diactoros\ServerRequest  $request
+     * @param  \Psr\Http\Message\ServerRequestInterface  $request
      * @return array
      */
-    protected function dispatchRequestToAuthorizationServer(ServerRequest $request)
+    protected function dispatchRequestToAuthorizationServer(ServerRequestInterface $request)
     {
         return json_decode($this->server->respondToAccessTokenRequest(
             $request, new Response
