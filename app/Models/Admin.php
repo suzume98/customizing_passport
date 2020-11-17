@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class Admin extends Authenticatable
 {
     use HasFactory, Notifiable;
 
@@ -42,10 +42,10 @@ class User extends Authenticatable
     ];
 
     //----- Need to assign clientId and tokenName class's variables to access customized Passport function -----//
-    public static $clientId=1;
+    public static $clientId=3;
 
-    public $tokenName='Authorization';
+    public $tokenName='Admin';
 
-    public $guardProviderName=NULL;
+    public $guardProviderName='admins';
     //----- Need to assign clientId and tokenName class's variables to access customized Passport function -----//
 }
